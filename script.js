@@ -1,8 +1,8 @@
 // 1. SUPABASE SETUP
 // ------------------------------------------------
 // Replace these with your own Supabase project URL and anon key.
-const SUPABASE_URL = 'https://aaajixktzdglynxhchbk.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhYWppeGt0emRnbHlueGhjaGJrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY5MzQ5MTYsImV4cCI6MjA3MjUxMDkxNn0.BHkRJGwhLE6ViVX7KOe8g-iXu3n6dlXzMhxAb8GpsDE';
+const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 
 // Initialize the Supabase client.
 const { createClient } = supabase;
@@ -48,7 +48,14 @@ function updateUserUI(user) {
         // User is logged in
         loginBtn.classList.add('hidden');
         userInfo.classList.remove('hidden');
-        userAvatar.src = user.user_metadata.avatar_url;
+
+        // Safely set avatar URL
+        if (user.user_metadata && user.user_metadata.avatar_url) {
+            userAvatar.src = user.user_metadata.avatar_url;
+        } else {
+            userAvatar.src = ''; // or a default avatar
+        }
+
         chatInput.disabled = false;
         sendButton.disabled = false;
         chatInput.placeholder = "Ask the AI something...";
