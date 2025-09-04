@@ -19,6 +19,9 @@ const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const sendButton = chatForm.querySelector('button');
 const chatMessages = document.getElementById('chat-messages');
+const menuToggleBtn = document.getElementById('menu-toggle-btn');
+const sidebar = document.getElementById('sidebar');
+const mainContent = document.getElementById('main-content');
 
 
 // 3. AUTHENTICATION
@@ -111,22 +114,26 @@ async function handleChatSubmit(event) {
 
     addMessageToUI('AI is thinking...', 'ai');
 
+    const thinkingMessage = chatMessages.lastChild;
+
     try {
         const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            throw new Error(`The AI is taking a break... (HTTP status: ${response.status})`);
         }
         const aiResponse = await response.text();
 
-        // Remove the "thinking" message
-        chatMessages.removeChild(chatMessages.lastChild);
+        if (thinkingMessage) {
+            chatMessages.removeChild(thinkingMessage);
+        }
         addMessageToUI(aiResponse, 'ai');
 
     } catch (error) {
         console.error('Error fetching from Pollinations AI:', error);
-        // Remove the "thinking" message
-        chatMessages.removeChild(chatMessages.lastChild);
-        addMessageToUI('Sorry, something went wrong. Please try again.', 'ai');
+        if (thinkingMessage) {
+            chatMessages.removeChild(thinkingMessage);
+        }
+        addMessageToUI(error.message || 'Sorry, something went wrong. Please try again.', 'ai');
     } finally {
         sendButton.disabled = false;
         chatInput.disabled = false;
@@ -140,6 +147,9 @@ async function handleChatSubmit(event) {
 loginBtn.addEventListener('click', loginWithGoogle);
 logoutBtn.addEventListener('click', logout);
 chatForm.addEventListener('submit', handleChatSubmit);
+menuToggleBtn.addEventListener('click', () => {
+    sidebar.classList.toggle('open');
+});
 
 // Initial check
 checkSession();
