@@ -8,8 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <header>
-        <h1>AI Chat</h1>
+    <div id="sidebar">
         <div id="auth-container">
             <button id="login-btn">Login with Google</button>
             <div id="user-info" class="hidden">
@@ -17,15 +16,22 @@
                 <button id="logout-btn">Logout</button>
             </div>
         </div>
-    </header>
+    </div>
 
-    <main id="chat-container">
-        <div id="chat-messages"></div>
-        <form id="chat-form">
-            <input type="text" id="chat-input" placeholder="Ask the AI something..." autocomplete="off" disabled>
-            <button type="submit" disabled>Send</button>
-        </form>
-    </main>
+    <div id="main-content">
+        <header>
+            <button id="menu-toggle-btn">☰</button>
+            <h1>AI Chat</h1>
+        </header>
+
+        <main id="chat-container">
+            <div id="chat-messages"></div>
+            <form id="chat-form">
+                <input type="text" id="chat-input" placeholder="Ask the AI something..." autocomplete="off" disabled>
+                <button type="submit" disabled>Send</button>
+            </form>
+        </main>
+    </div>
 
     <script src="script.js"></script>
 </body>
