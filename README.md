@@ -30,7 +30,18 @@ If you don't have one already, create a new project on [Supabase](https://supaba
     -   Example GitHub Pages URL: `https://<your-github-username>.github.io/<your-repo-name>/`
     -   Example local development URL: `http://127.0.0.1:5500/` (or whatever port you are using)
 
-### 4. Add Credentials to `script.js`
+### 4. Set Up the Database
+
+This project uses a Supabase table to store chat history.
+
+1.  Find the `supabase_schema.sql` file in this repository.
+2.  Open the file and copy its entire contents.
+3.  In your Supabase project dashboard, navigate to the **SQL Editor**.
+4.  Click **"New query"** and paste the SQL script you copied.
+5.  Click **"Run"**. This will create the `messages` table.
+6.  **Important**: You must enable Row Level Security (RLS) for the chat history to work correctly. Go to **Authentication** > **Policies**, find the `messages` table, and click **"Enable RLS"**.
+
+### 5. Add Credentials to `script.js`
 
 Open the `script.js` file and replace the placeholder values for `SUPABASE_URL` and `SUPABASE_ANON_KEY` with your own credentials:
 
