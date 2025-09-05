@@ -80,11 +80,23 @@ async function loadConversations() {
     data.forEach(convo => {
         const convoElement = document.createElement('div');
         convoElement.classList.add('conversation-item');
-        convoElement.textContent = convo.title;
         convoElement.dataset.id = convo.id;
-        convoElement.addEventListener('click', () => {
-            loadChatHistory(convo.id);
+
+        const title = document.createElement('span');
+        title.className = 'conversation-title';
+        title.textContent = convo.title;
+        convoElement.addEventListener('click', () => loadChatHistory(convo.id));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'delete-convo-btn';
+        deleteBtn.textContent = '×';
+        deleteBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent loading the conversation
+            handleDeleteConversation(convo.id, convo.title);
         });
+
+        convoElement.appendChild(title);
+        convoElement.appendChild(deleteBtn);
         conversationsList.appendChild(convoElement);
     });
 }
@@ -111,6 +123,25 @@ async function loadChatHistory(conversationId) {
     });
 }
 
+async function handleDeleteConversation(conversationId, title) {
+    const confirmation = confirm(`Are you sure you want to delete the conversation: "${title}"?`);
+    if (!confirmation) return;
+
+    const { error } = await _supabase.from('conversations').delete().eq('id', conversationId);
+
+    if (error) {
+        console.error('Error deleting conversation:', error);
+        alert('Could not delete the conversation. Please try again.');
+        return;
+    }
+
+    if (activeConversationId === conversationId) {
+        startNewConversation();
+    }
+
+    await loadConversations(); // Refresh the list
+}
+
 function startNewConversation() {
     activeConversationId = null;
     conversationHistory = [];
@@ -135,6 +166,26 @@ async function saveMessage(content, sender, convoId) {
     const { data: { user } } = await _supabase.auth.getUser();
     if (!user) return;
     await _supabase.from('messages').insert([{ content, sender, conversation_id: convoId, user_id: user.id }]);
+}
+
+async function streamResponse(element, text) {
+    return new Promise(resolve => {
+        let index = 0;
+        element.innerHTML = '';
+        const interval = setInterval(() => {
+            if (index < text.length) {
+                element.innerHTML += text.charAt(index);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                index++;
+            } else {
+                clearInterval(interval);
+                // Re-parse with marked to ensure code blocks are formatted correctly at the end
+                element.innerHTML = marked.parse(text);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                resolve();
+            }
+        }, 20); // Adjust typing speed here (milliseconds)
+    });
 }
 
 async function handleChatSubmit(event) {
@@ -179,18 +230,26 @@ async function handleChatSubmit(event) {
 
     addMessageToUI('AI is thinking...', 'ai');
 
+    const thinkingMessage = chatMessages.lastChild;
+
     try {
         const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(finalPrompt)}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
         const aiResponse = await response.text();
-        chatMessages.lastChild.remove(); // Remove "thinking" message
-        addMessageToUI(aiResponse, 'ai');
+        thinkingMessage.remove(); // Remove "thinking" message
+
+        // Create the AI message element and stream the response into it
+        const aiMessageElement = document.createElement('div');
+        aiMessageElement.classList.add('message', 'ai');
+        chatMessages.appendChild(aiMessageElement);
+
+        await streamResponse(aiMessageElement, aiResponse);
         await saveMessage(aiResponse, 'ai', currentConvoId);
 
     } catch (error) {
         console.error('Error fetching from Pollinations AI:', error);
-        chatMessages.lastChild.remove();
+        thinkingMessage.remove();
         addMessageToUI('Sorry, something went wrong. Please try again.', 'ai');
     } finally {
         sendButton.disabled = false;

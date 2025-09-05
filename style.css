@@ -61,13 +61,41 @@ body {
 }
 
 .conversation-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     padding: 10px 12px;
     border-radius: 8px;
     cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.conversation-title {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: background-color 0.2s;
+    flex-grow: 1;
+}
+
+.delete-convo-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.5rem;
+    line-height: 1;
+    padding: 0 5px;
+    border-radius: 4px;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s, background-color 0.2s;
+}
+
+.conversation-item:hover .delete-convo-btn {
+    opacity: 1; /* Show on hover */
+}
+
+.delete-convo-btn:hover {
+    background-color: #4a4a4a;
+    color: var(--text-primary);
 }
 
 .conversation-item:hover {
