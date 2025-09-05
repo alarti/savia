@@ -156,7 +156,7 @@ async function handleChatSubmit(event) {
     const thinkingMessage = addMessageToUI('AI is thinking...', 'ai');
 
     try {
-        const response = await fetch(`https://pollinations.ai/p/${encodeURIComponent(prompt)}?prompt=${encodeURIComponent(prompt)}&model=turbo`);
+        const response = await fetch(`https://text.pollinations.ai/prompt/q?prompt=${encodeURIComponent(prompt)}`);
         if (!response.ok) {
             throw new Error(`The AI is taking a break... (HTTP status: ${response.status})`);
         }
