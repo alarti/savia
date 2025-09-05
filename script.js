@@ -19,6 +19,11 @@ const menuToggleBtn = document.getElementById('menu-toggle-btn');
 const sidebar = document.getElementById('sidebar');
 const newConvoBtn = document.getElementById('new-convo-btn');
 const conversationsList = document.getElementById('conversations-list');
+const userName = document.getElementById('user-name');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
+const modalOverlay = document.getElementById('modal-overlay');
 
 // 3. GLOBAL STATE
 // ------------------------------------------------
@@ -41,6 +46,9 @@ function updateUserUI(user) {
         userInfo.classList.remove('hidden');
         if (user.user_metadata?.avatar_url) {
             userAvatar.src = user.user_metadata.avatar_url;
+        }
+        if (user.user_metadata?.full_name) {
+            userName.textContent = user.user_metadata.full_name;
         }
         chatInput.disabled = false;
         sendButton.disabled = false;
@@ -262,5 +270,22 @@ async function handleChatSubmit(event) {
 loginBtn.addEventListener('click', loginWithGoogle);
 logoutBtn.addEventListener('click', logout);
 chatForm.addEventListener('submit', handleChatSubmit);
-menuToggleBtn.addEventListener('click', () => sidebar.classList.toggle('open'));
 newConvoBtn.addEventListener('click', startNewConversation);
+
+menuToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('sidebar-collapsed');
+});
+
+function openModal() {
+    settingsModal.classList.remove('hidden');
+    modalOverlay.classList.remove('hidden');
+}
+
+function closeModal() {
+    settingsModal.classList.add('hidden');
+    modalOverlay.classList.add('hidden');
+}
+
+settingsBtn.addEventListener('click', openModal);
+closeModalBtn.addEventListener('click', closeModal);
+modalOverlay.addEventListener('click', closeModal);
