@@ -171,11 +171,11 @@ async function handleChatSubmit(event) {
 
     // Prepare context for the AI
     const context = conversationHistory
-        .slice(-6) // Get last 6 messages for context
+        .slice(-7) // Get up to 7 recent messages for context
         .map(msg => `${msg.sender === 'user' ? 'User' : 'AI'}: ${msg.content}`)
         .join('\n');
 
-    const finalPrompt = `Context:\n${context}\n\nInstruction: Answer the last user prompt in Spanish.\n\n`;
+    const finalPrompt = `Given this conversation history:\n${context}\n\nProvide a response to the last user message in Spanish.`;
 
     addMessageToUI('AI is thinking...', 'ai');
 
