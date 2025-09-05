@@ -44,6 +44,7 @@ function updateUserUI(user) {
     if (user) {
         loginBtn.classList.add('hidden');
         userInfo.classList.remove('hidden');
+        settingsBtn.classList.remove('hidden');
         if (user.user_metadata?.avatar_url) {
             userAvatar.src = user.user_metadata.avatar_url;
         }
@@ -58,6 +59,7 @@ function updateUserUI(user) {
     } else {
         loginBtn.classList.remove('hidden');
         userInfo.classList.add('hidden');
+        settingsBtn.classList.add('hidden');
         userAvatar.src = '';
         chatInput.disabled = true;
         sendButton.disabled = true;

@@ -127,9 +127,24 @@ body.sidebar-collapsed #sidebar {
     transition: margin-left 0.3s ease-in-out;
 }
 
+#settings-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: transparent;
+    color: var(--text-primary);
+    border: none;
+    text-align: left;
+    margin-bottom: 0.5rem;
+}
+
+#settings-btn:hover {
+    background-color: var(--background-lighter);
+}
+
 body.sidebar-collapsed #sidebar .conversation-title,
 body.sidebar-collapsed #sidebar #new-convo-btn span,
 body.sidebar-collapsed #sidebar #logout-btn span,
+body.sidebar-collapsed #sidebar #settings-btn span,
 body.sidebar-collapsed #sidebar #user-name {
     display: none;
 }
