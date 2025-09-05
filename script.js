@@ -9,21 +9,23 @@ const _supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ------------------------------------------------
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
-const userInfo = document.getElementById('user-info');
+const userMenu = document.getElementById('user-menu');
+const userInfoTrigger = document.getElementById('user-info-trigger');
+const userPopover = document.getElementById('user-popover');
 const userAvatar = document.getElementById('user-avatar');
+const userName = document.getElementById('user-name');
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const sendButton = chatForm.querySelector('button');
 const chatMessages = document.getElementById('chat-messages');
 const menuToggleBtn = document.getElementById('menu-toggle-btn');
-const sidebar = document.getElementById('sidebar');
 const newConvoBtn = document.getElementById('new-convo-btn');
 const conversationsList = document.getElementById('conversations-list');
-const userName = document.getElementById('user-name');
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const modalOverlay = document.getElementById('modal-overlay');
+const clearAllBtn = document.getElementById('clear-all-btn');
 
 // 3. GLOBAL STATE
 // ------------------------------------------------
@@ -32,25 +34,15 @@ let conversationHistory = [];
 
 // 4. AUTHENTICATION
 // ------------------------------------------------
-async function loginWithGoogle() {
-    await _supabase.auth.signInWithOAuth({ provider: 'google' });
-}
-
-async function logout() {
-    await _supabase.auth.signOut();
-}
+async function loginWithGoogle() { await _supabase.auth.signInWithOAuth({ provider: 'google' }); }
+async function logout() { await _supabase.auth.signOut(); }
 
 function updateUserUI(user) {
     if (user) {
         loginBtn.classList.add('hidden');
-        userInfo.classList.remove('hidden');
-        settingsBtn.classList.remove('hidden');
-        if (user.user_metadata?.avatar_url) {
-            userAvatar.src = user.user_metadata.avatar_url;
-        }
-        if (user.user_metadata?.full_name) {
-            userName.textContent = user.user_metadata.full_name;
-        }
+        userMenu.classList.remove('hidden');
+        userAvatar.src = user.user_metadata?.avatar_url || '';
+        userName.textContent = user.user_metadata?.full_name || 'User';
         chatInput.disabled = false;
         sendButton.disabled = false;
         chatInput.placeholder = "Ask the AI something...";
@@ -58,9 +50,7 @@ function updateUserUI(user) {
         startNewConversation();
     } else {
         loginBtn.classList.remove('hidden');
-        userInfo.classList.add('hidden');
-        settingsBtn.classList.add('hidden');
-        userAvatar.src = '';
+        userMenu.classList.add('hidden');
         chatInput.disabled = true;
         sendButton.disabled = true;
         chatInput.placeholder = "Please log in to chat.";
@@ -76,35 +66,25 @@ _supabase.auth.onAuthStateChange((_event, session) => {
 // 5. CONVERSATION MANAGEMENT
 // ------------------------------------------------
 async function loadConversations() {
-    const { data, error } = await _supabase
-        .from('conversations')
-        .select('id, title')
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error loading conversations:', error);
-        return;
-    }
+    const { data, error } = await _supabase.from('conversations').select('id, title').order('created_at', { ascending: false });
+    if (error) { console.error('Error loading conversations:', error); return; }
 
     conversationsList.innerHTML = '';
     data.forEach(convo => {
         const convoElement = document.createElement('div');
         convoElement.classList.add('conversation-item');
         convoElement.dataset.id = convo.id;
-
         const title = document.createElement('span');
         title.className = 'conversation-title';
         title.textContent = convo.title;
         convoElement.addEventListener('click', () => loadChatHistory(convo.id));
-
         const deleteBtn = document.createElement('button');
         deleteBtn.className = 'delete-convo-btn';
         deleteBtn.textContent = '×';
         deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent loading the conversation
+            e.stopPropagation();
             handleDeleteConversation(convo.id, convo.title);
         });
-
         convoElement.appendChild(title);
         convoElement.appendChild(deleteBtn);
         conversationsList.appendChild(convoElement);
@@ -112,44 +92,33 @@ async function loadConversations() {
 }
 
 async function loadChatHistory(conversationId) {
-    const { data, error } = await _supabase
-        .from('messages')
-        .select('content, sender')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-    if (error) {
-        console.error('Error loading chat history:', error);
-        return;
-    }
+    const { data, error } = await _supabase.from('messages').select('content, sender').eq('conversation_id', conversationId).order('created_at', { ascending: true });
+    if (error) { console.error('Error loading chat history:', error); return; }
 
     activeConversationId = conversationId;
     conversationHistory = [];
     chatMessages.innerHTML = '';
     data.forEach(msg => addMessageToUI(msg.content, msg.sender));
-
-    document.querySelectorAll('.conversation-item').forEach(el => {
-        el.classList.toggle('active', el.dataset.id === String(conversationId));
-    });
+    document.querySelectorAll('.conversation-item').forEach(el => el.classList.toggle('active', el.dataset.id === String(conversationId)));
 }
 
 async function handleDeleteConversation(conversationId, title) {
-    const confirmation = confirm(`Are you sure you want to delete the conversation: "${title}"?`);
-    if (!confirmation) return;
-
+    if (!confirm(`Are you sure you want to delete the conversation: "${title}"?`)) return;
     const { error } = await _supabase.from('conversations').delete().eq('id', conversationId);
+    if (error) { console.error('Error deleting conversation:', error); alert('Could not delete the conversation.'); return; }
+    if (activeConversationId === conversationId) startNewConversation();
+    await loadConversations();
+}
 
-    if (error) {
-        console.error('Error deleting conversation:', error);
-        alert('Could not delete the conversation. Please try again.');
-        return;
-    }
-
-    if (activeConversationId === conversationId) {
-        startNewConversation();
-    }
-
-    await loadConversations(); // Refresh the list
+async function handleClearAll() {
+    if (!confirm('DANGER: This will delete all of your conversations. Are you absolutely sure?')) return;
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) return;
+    const { error } = await _supabase.from('conversations').delete().eq('user_id', user.id);
+    if (error) { console.error('Error clearing conversations:', error); alert('Could not clear conversations.'); return; }
+    startNewConversation();
+    await loadConversations();
+    closeModal();
 }
 
 function startNewConversation() {
@@ -167,7 +136,7 @@ function addMessageToUI(content, sender) {
     conversationHistory.push({ sender, content });
     const messageElement = document.createElement('div');
     messageElement.classList.add('message', sender);
-    messageElement.innerHTML = marked.parse(content); // Use marked to parse markdown
+    messageElement.innerHTML = marked.parse(content);
     chatMessages.appendChild(messageElement);
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
@@ -189,12 +158,11 @@ async function streamResponse(element, text) {
                 index++;
             } else {
                 clearInterval(interval);
-                // Re-parse with marked to ensure code blocks are formatted correctly at the end
                 element.innerHTML = marked.parse(text);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
                 resolve();
             }
-        }, 20); // Adjust typing speed here (milliseconds)
+        }, 20);
     });
 }
 
@@ -202,61 +170,36 @@ async function handleChatSubmit(event) {
     event.preventDefault();
     const userPrompt = chatInput.value.trim();
     if (!userPrompt) return;
-
     chatInput.value = '';
     sendButton.disabled = true;
     addMessageToUI(userPrompt, 'user');
-
     let currentConvoId = activeConversationId;
-
-    // If this is the first message of a new conversation, create it
     if (!currentConvoId) {
-        const { data, error } = await _supabase
-            .from('conversations')
-            .insert({ title: userPrompt, user_id: (await _supabase.auth.getUser()).data.user.id })
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error creating conversation:', error);
-            addMessageToUI('Sorry, I could not start a new conversation.', 'ai');
-            return;
-        }
+        const { data, error } = await _supabase.from('conversations').insert({ title: userPrompt, user_id: (await _supabase.auth.getUser()).data.user.id }).select().single();
+        if (error) { console.error('Error creating conversation:', error); addMessageToUI('Sorry, I could not start a new conversation.', 'ai'); return; }
         currentConvoId = data.id;
         activeConversationId = data.id;
-        await loadConversations(); // Refresh list
+        await loadConversations();
         document.querySelector(`.conversation-item[data-id='${currentConvoId}']`)?.classList.add('active');
     }
-
     await saveMessage(userPrompt, 'user', currentConvoId);
-
-    // Prepare context for the AI
-    const context = conversationHistory
-        .slice(-7) // Get up to 7 recent messages for context
-        .map(msg => `${msg.sender === 'user' ? 'User' : 'AI'}: ${msg.content}`)
-        .join('\n');
-
+    const context = conversationHistory.slice(-7).map(msg => `${msg.sender === 'user' ? 'User' : 'AI'}: ${msg.content}`).join('\n');
     const finalPrompt = `Given this conversation history:\n${context}\n\nProvide a response to the last user message in Spanish.`;
-
-    addMessageToUI('AI is thinking...', 'ai');
-
-    const thinkingMessage = chatMessages.lastChild;
-
+    const thinkingMessage = document.createElement('div');
+    thinkingMessage.classList.add('message', 'ai');
+    thinkingMessage.textContent = 'AI is thinking...';
+    chatMessages.appendChild(thinkingMessage);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
     try {
         const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(finalPrompt)}`);
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
         const aiResponse = await response.text();
-        thinkingMessage.remove(); // Remove "thinking" message
-
-        // Create the AI message element and stream the response into it
+        thinkingMessage.remove();
         const aiMessageElement = document.createElement('div');
         aiMessageElement.classList.add('message', 'ai');
         chatMessages.appendChild(aiMessageElement);
-
         await streamResponse(aiMessageElement, aiResponse);
         await saveMessage(aiResponse, 'ai', currentConvoId);
-
     } catch (error) {
         console.error('Error fetching from Pollinations AI:', error);
         thinkingMessage.remove();
@@ -273,9 +216,17 @@ loginBtn.addEventListener('click', loginWithGoogle);
 logoutBtn.addEventListener('click', logout);
 chatForm.addEventListener('submit', handleChatSubmit);
 newConvoBtn.addEventListener('click', startNewConversation);
+menuToggleBtn.addEventListener('click', () => document.body.classList.toggle('sidebar-collapsed'));
 
-menuToggleBtn.addEventListener('click', () => {
-    document.body.classList.toggle('sidebar-collapsed');
+userInfoTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    userPopover.classList.toggle('hidden');
+});
+
+window.addEventListener('click', () => {
+    if (!userPopover.classList.contains('hidden')) {
+        userPopover.classList.add('hidden');
+    }
 });
 
 function openModal() {
@@ -288,6 +239,10 @@ function closeModal() {
     modalOverlay.classList.add('hidden');
 }
 
-settingsBtn.addEventListener('click', openModal);
+settingsBtn.addEventListener('click', () => {
+    openModal();
+    userPopover.classList.add('hidden');
+});
 closeModalBtn.addEventListener('click', closeModal);
 modalOverlay.addEventListener('click', closeModal);
+clearAllBtn.addEventListener('click', handleClearAll);

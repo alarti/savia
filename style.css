@@ -115,6 +115,47 @@ body.sidebar-collapsed #sidebar {
     margin-top: auto;
     padding-top: 1rem;
     border-top: 1px solid var(--border-color);
+    position: relative; /* For popover positioning */
+}
+
+#user-info-trigger {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+}
+
+#user-info-trigger:hover {
+    background-color: var(--background-lighter);
+}
+
+#user-popover {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    background-color: #3a3a3a;
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.2);
+    margin-bottom: 0.5rem;
+    z-index: 1001;
+}
+
+#user-popover button {
+    display: block;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    color: var(--text-primary);
+    text-align: left;
+}
+
+#user-popover button:hover {
+    background-color: var(--accent-primary);
 }
 
 #main-content {
@@ -125,20 +166,6 @@ body.sidebar-collapsed #sidebar {
     min-width: 0;
     margin-left: 250px;
     transition: margin-left 0.3s ease-in-out;
-}
-
-#settings-btn {
-    width: 100%;
-    padding: 12px;
-    background-color: transparent;
-    color: var(--text-primary);
-    border: none;
-    text-align: left;
-    margin-bottom: 0.5rem;
-}
-
-#settings-btn:hover {
-    background-color: var(--background-lighter);
 }
 
 body.sidebar-collapsed #sidebar .conversation-title,
@@ -383,4 +410,30 @@ button {
     display: flex;
     align-items: center;
     gap: 1rem;
+}
+
+.danger-zone {
+    border-top: 1px solid var(--border-color);
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+}
+
+.danger-zone h4 {
+    color: #e53935;
+    margin-top: 0;
+}
+
+.danger-zone p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.danger-btn {
+    background-color: #e53935;
+    color: white;
+    padding: 10px 15px;
+}
+
+.danger-btn:hover {
+    background-color: #c62828;
 }
