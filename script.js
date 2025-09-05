@@ -62,6 +62,8 @@ function updateUserUI(user) {
         chatInput.disabled = false;
         sendButton.disabled = false;
         chatInput.placeholder = "Ask the AI something...";
+        
+        loadChatHistory(); // Load user's chat history
     } else {
         // User is logged out
         loginBtn.classList.remove('hidden');
@@ -70,6 +72,7 @@ function updateUserUI(user) {
         chatInput.disabled = true;
         sendButton.disabled = true;
         chatInput.placeholder = "Please log in to chat.";
+        chatMessages.innerHTML = '<div class="message ai">Please log in to see your chat history.</div>';
     }
 }
 
@@ -92,6 +95,42 @@ _supabase.auth.onAuthStateChange((_event, session) => {
 // 4. CHAT
 // ------------------------------------------------
 
+// Function to save a message to Supabase
+async function saveMessage(content, sender) {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) {
+        console.error('Cannot save message: no user is logged in.');
+        return;
+    }
+
+    const { error } = await _supabase
+        .from('messages')
+        .insert([{ content, sender, user_id: user.id }]);
+
+    if (error) {
+        console.error('Error saving message:', error.message);
+    }
+}
+
+// Function to load chat history from Supabase
+async function loadChatHistory() {
+    const { data: messages, error } = await _supabase
+        .from('messages')
+        .select('content, sender')
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error('Error loading chat history:', error.message);
+        addMessageToUI('Could not load chat history.', 'ai');
+        return;
+    }
+
+    chatMessages.innerHTML = ''; // Clear existing messages
+    for (const message of messages) {
+        addMessageToUI(message.content, message.sender);
+    }
+}
+
 // Function to add a message to the UI
 function addMessageToUI(message, sender) {
     const messageElement = document.createElement('div');
@@ -108,32 +147,31 @@ async function handleChatSubmit(event) {
     if (!prompt) return;
 
     addMessageToUI(prompt, 'user');
+    await saveMessage(prompt, 'user'); // Save user message
+
     chatInput.value = '';
     sendButton.disabled = true;
     chatInput.disabled = true;
 
-    addMessageToUI('AI is thinking...', 'ai');
-
-    const thinkingMessage = chatMessages.lastChild;
+    const thinkingMessage = addMessageToUI('AI is thinking...', 'ai');
 
     try {
-        const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
+        const response = await fetch(`https://pollinations.ai/p/${encodeURIComponent(prompt)}?prompt=${encodeURIComponent(prompt)}&model=turbo`);
         if (!response.ok) {
             throw new Error(`The AI is taking a break... (HTTP status: ${response.status})`);
         }
         const aiResponse = await response.text();
 
-        if (thinkingMessage) {
-            chatMessages.removeChild(thinkingMessage);
-        }
+        chatMessages.removeChild(chatMessages.lastChild); // Remove "thinking" message
         addMessageToUI(aiResponse, 'ai');
+        await saveMessage(aiResponse, 'ai'); // Save AI response
 
     } catch (error) {
         console.error('Error fetching from Pollinations AI:', error);
-        if (thinkingMessage) {
-            chatMessages.removeChild(thinkingMessage);
-        }
-        addMessageToUI(error.message || 'Sorry, something went wrong. Please try again.', 'ai');
+        chatMessages.removeChild(chatMessages.lastChild); // Remove "thinking" message
+        const errorMessage = error.message || 'Sorry, something went wrong. Please try again.';
+        addMessageToUI(errorMessage, 'ai');
+        // Do not save error messages to history
     } finally {
         sendButton.disabled = false;
         chatInput.disabled = false;
