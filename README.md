@@ -38,8 +38,8 @@ This project uses a Supabase table to store chat history.
 2.  Open the file and copy its entire contents.
 3.  In your Supabase project dashboard, navigate to the **SQL Editor**.
 4.  Click **"New query"** and paste the SQL script you copied.
-5.  Click **"Run"**. This will create the `messages` table.
-6.  **Important**: You must enable Row Level Security (RLS) for the chat history to work correctly. Go to **Authentication** > **Policies**, find the `messages` table, and click **"Enable RLS"**.
+5.  Click **"Run"**. This will create the `conversations` and `messages` tables.
+6.  **Important**: You must enable Row Level Security (RLS) for the chat history to work correctly. Go to **Authentication** > **Policies**, find both the `conversations` and `messages` tables, and click **"Enable RLS"** for each one.
 
 ### 5. Add Credentials to `script.js`
 
